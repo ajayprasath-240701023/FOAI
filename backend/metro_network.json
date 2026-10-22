@@ -1,0 +1,55 @@
+{
+  "stations": [
+    {"id": "west_terminal",    "name": "West Terminal",    "lines": ["Blue"],          "x":   80, "y": 300, "is_interchange": false},
+    {"id": "westwood",         "name": "Westwood Park",    "lines": ["Blue"],          "x":  215, "y": 300, "is_interchange": false},
+    {"id": "university",       "name": "University Gate",  "lines": ["Blue"],          "x":  355, "y": 300, "is_interchange": false},
+    {"id": "central_hub",      "name": "Central Hub",      "lines": ["Blue","Red"],    "x":  500, "y": 300, "is_interchange": true},
+    {"id": "market_plaza",     "name": "Market Plaza",     "lines": ["Blue","Green"],  "x":  655, "y": 300, "is_interchange": true},
+    {"id": "riverside",        "name": "Riverside",        "lines": ["Blue"],          "x":  790, "y": 300, "is_interchange": false},
+    {"id": "tech_valley",      "name": "Tech Valley",      "lines": ["Blue"],          "x":  915, "y": 300, "is_interchange": false},
+    {"id": "east_terminal",    "name": "East Terminal",    "lines": ["Blue"],          "x": 1055, "y": 300, "is_interchange": false},
+
+    {"id": "northern_heights", "name": "Northern Heights", "lines": ["Red"],           "x":  500, "y":  55, "is_interchange": false},
+    {"id": "industrial_zone",  "name": "Industrial Zone",  "lines": ["Red"],           "x":  500, "y": 140, "is_interchange": false},
+    {"id": "suburban_north",   "name": "Suburban North",   "lines": ["Red"],           "x":  500, "y": 225, "is_interchange": false},
+    {"id": "old_town",         "name": "Old Town",         "lines": ["Red","Green"],   "x":  500, "y": 390, "is_interchange": true},
+    {"id": "harbour_view",     "name": "Harbour View",     "lines": ["Red"],           "x":  500, "y": 475, "is_interchange": false},
+    {"id": "south_terminal",   "name": "South Terminal",   "lines": ["Red"],           "x":  500, "y": 570, "is_interchange": false},
+
+    {"id": "airport",          "name": "Airport",          "lines": ["Green","Blue"],  "x":  115, "y": 560, "is_interchange": true},
+    {"id": "expo_centre",      "name": "Expo Centre",      "lines": ["Green"],         "x":  265, "y": 475, "is_interchange": false},
+    {"id": "cultural_hub",     "name": "Cultural Hub",     "lines": ["Green"],         "x":  590, "y": 350, "is_interchange": false},
+    {"id": "science_park",     "name": "Science Park",     "lines": ["Green","Blue"],  "x":  780, "y": 205, "is_interchange": true},
+    {"id": "it_hub",           "name": "IT Hub",           "lines": ["Green"],         "x":  910, "y": 145, "is_interchange": false},
+    {"id": "north_connect",    "name": "North Connect",    "lines": ["Green"],         "x": 1010, "y":  75, "is_interchange": false}
+  ],
+  "edges": [
+    {"from": "west_terminal",    "to": "westwood",         "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+    {"from": "westwood",         "to": "university",       "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+    {"from": "university",       "to": "central_hub",      "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+    {"from": "central_hub",      "to": "market_plaza",     "line": "Blue",  "travel_time": 5, "travel_cost": 12},
+    {"from": "market_plaza",     "to": "riverside",        "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+    {"from": "riverside",        "to": "tech_valley",      "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+    {"from": "tech_valley",      "to": "east_terminal",    "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+
+    {"from": "northern_heights", "to": "industrial_zone",  "line": "Red",   "travel_time": 3, "travel_cost":  8},
+    {"from": "industrial_zone",  "to": "suburban_north",   "line": "Red",   "travel_time": 3, "travel_cost":  8},
+    {"from": "suburban_north",   "to": "central_hub",      "line": "Red",   "travel_time": 3, "travel_cost":  8},
+    {"from": "central_hub",      "to": "old_town",         "line": "Red",   "travel_time": 3, "travel_cost":  8},
+    {"from": "old_town",         "to": "harbour_view",     "line": "Red",   "travel_time": 3, "travel_cost":  8},
+    {"from": "harbour_view",     "to": "south_terminal",   "line": "Red",   "travel_time": 3, "travel_cost":  8},
+
+    {"from": "airport",          "to": "expo_centre",      "line": "Green", "travel_time": 6, "travel_cost": 15},
+    {"from": "expo_centre",      "to": "old_town",         "line": "Green", "travel_time": 7, "travel_cost": 18},
+    {"from": "old_town",         "to": "cultural_hub",     "line": "Green", "travel_time": 3, "travel_cost":  8},
+    {"from": "cultural_hub",     "to": "market_plaza",     "line": "Green", "travel_time": 3, "travel_cost":  8},
+    {"from": "market_plaza",     "to": "science_park",     "line": "Green", "travel_time": 5, "travel_cost": 12},
+    {"from": "science_park",     "to": "it_hub",           "line": "Green", "travel_time": 5, "travel_cost": 12},
+    {"from": "it_hub",           "to": "north_connect",    "line": "Green", "travel_time": 4, "travel_cost": 10},
+
+    {"from": "airport",          "to": "central_hub",      "line": "Blue",  "travel_time": 8, "travel_cost": 35},
+    {"from": "suburban_north",   "to": "university",       "line": "Red",   "travel_time": 4, "travel_cost": 10},
+    {"from": "tech_valley",      "to": "science_park",     "line": "Blue",  "travel_time": 4, "travel_cost": 10},
+    {"from": "harbour_view",     "to": "market_plaza",     "line": "Green", "travel_time": 5, "travel_cost": 12}
+  ]
+}

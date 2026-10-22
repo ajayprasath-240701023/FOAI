@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Metro — Crowd-Aware A* Route Engine & Neural Transit Command</title>
+  <meta name="description"
+    content="AI Metro: Advanced crowd-aware A* route engine and interactive urban transit simulator with real-time heuristic pathfinding, dynamic congestion, network disruption modeling, and algorithm explainability." />
+
+  <!-- Fonts: Space Grotesk (Brand & Display), Inter (UI), JetBrains Mono (Metrics & Math) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css?v=2.6" />
+</head>
+
+<body>
+  <!-- ═══════════════════════════ TOP COMMAND NAVBAR ═══════════════════════════ -->
+  <header id="top-navbar">
+    <!-- Left: Brand Identity -->
+    <div class="nav-brand">
+      <div class="brand-glyph">
+        <svg viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="14" stroke="url(#navGrad)" stroke-width="2.5" />
+          <path d="M10 16 L16 10 L22 16 L16 22Z" fill="url(#navGrad)" opacity="0.8" />
+          <circle cx="16" cy="16" r="3.5" fill="#00f0ff" />
+          <defs>
+            <linearGradient id="navGrad" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0%" stop-color="#00f0ff" />
+              <stop offset="50%" stop-color="#818cf8" />
+              <stop offset="100%" stop-color="#c084fc" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="live-pulse-dot"></span>
+      </div>
+      <div class="brand-titles">
+        <div class="brand-row">
+          <span class="brand-name">AI METRO</span>
+          <span class="brand-badge-version">v2.5 PRO</span>
+        </div>
+        <span class="brand-tagline">Crowd-Aware A* Route Engine & Neural Transit Simulator</span>
+      </div>
+    </div>
+
+    <!-- Center: Live Network Operations HUD -->
+    <div class="nav-hud">
+      <div class="hud-item">
+        <span class="hud-label">NETWORK STATUS</span>
+        <div class="hud-val hud-online">
+          <span class="status-indicator-dot online"></span>
+          <span>ONLINE (99.4%)</span>
+        </div>
+      </div>
+      <div class="hud-divider"></div>
+      <div class="hud-item">
+        <span class="hud-label">ACTIVE LINES</span>
+        <div class="hud-lines">
+          <span class="line-pill-badge line-a" title="Line A — Emerald Green">LINE A</span>
+          <span class="line-pill-badge line-b" title="Line B — Electric Indigo">LINE B</span>
+          <span class="line-pill-badge line-c" title="Line C — Amber">LINE C</span>
+        </div>
+      </div>
+      <div class="hud-divider"></div>
+      <div class="hud-item">
+        <span class="hud-label">TRANSIT CLOCK</span>
+        <div class="hud-val mono" id="transit-clock">
+          19:54:00 <span class="clock-zone">IST</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Quick Actions & Settings -->
+    <div class="nav-actions">
+      <!-- Audio FX Toggle -->
+      <button id="btn-toggle-sound" class="btn-nav-glass active" title="Toggle UI Sound Effects">
+        <i data-lucide="volume-2" id="sound-icon"></i>
+        <span>Sound FX</span>
+      </button>
+
+      <!-- Multi-Agent Transit AI Council Trigger -->
+      <button id="btn-nav-council" class="btn-nav-council" title="Open Multi-Agent Transit AI Council Debate">
+        <i data-lucide="bot"></i>
+        <span>AI Council</span>
+      </button>
+
+      <!-- Quick Preset Demo Trigger -->
+      <button id="btn-quick-demo" class="btn-nav-demo" title="Run instant demo route">
+        <i data-lucide="sparkles"></i>
+        <span>Quick Demo</span>
+      </button>
+
+      <!-- Reset -->
+      <button id="btn-nav-reset" class="btn-nav-glass" title="Reset all disruptions & filters">
+        <i data-lucide="rotate-ccw"></i>
+        <span>Reset</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════ MAIN 3-PANEL LAYOUT ═══════════════════════════ -->
+  <div id="app-shell">
+
+    <!-- ── LEFT PANEL: Trip Planner & Simulation Deck (340px) ────────────────── -->
+    <aside id="sidebar-left" class="panel">
+      <div class="sidebar-scroll">
+
+        <!-- ── QUICK PRESETS CAROUSEL ──────────────────────────────────────── -->
+        <section class="sidebar-section quick-trips-section">
+          <div class="section-label">
+            <i data-lucide="zap" class="section-icon"></i>
+            <span>Popular Trips</span>
+            <span class="section-tag">Instant</span>
+          </div>
+          <div class="quick-chips-grid">
+            <button class="quick-chip-btn" data-src="airport" data-dst="central_hub">
+              <span class="chip-icon">✈️</span>
+              <span class="chip-text">Airport ➔ Central Hub</span>
+            </button>
+            <button class="quick-chip-btn" data-src="tech_valley" data-dst="harbour_view">
+              <span class="chip-icon">🏢</span>
+              <span class="chip-text">Tech Valley ➔ Harbour View</span>
+            </button>
+            <button class="quick-chip-btn" data-src="university" data-dst="science_park">
+              <span class="chip-icon">🎓</span>
+              <span class="chip-text">University ➔ Science Park</span>
+            </button>
+            <button class="quick-chip-btn" data-src="old_town" data-dst="northern_heights">
+              <span class="chip-icon">🏛️</span>
+              <span class="chip-text">Old Town ➔ Northern Hts</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ── TRIP PLANNER FORM ────────────────────────────────────────────── -->
+        <section class="sidebar-section">
+          <div class="section-label">
+            <i data-lucide="navigation" class="section-icon"></i>
+            <span>Trip Planner</span>
+          </div>
+
+          <!-- Source Station -->
+          <div class="form-group">
+            <label class="form-label" for="source-select">
+              <span class="dot dot-origin"></span> Departure Station
+            </label>
+            <div class="select-wrap">
+              <select id="source-select">
+                <option value="">Select departure station…</option>
+              </select>
+              <i data-lucide="chevron-down" class="select-caret"></i>
+            </div>
+          </div>
+
+          <!-- Swap Button Row -->
+          <div class="swap-row">
+            <div class="swap-line"></div>
+            <button id="btn-swap" class="btn-icon-round" title="Swap Origin ↔ Destination">
+              <i data-lucide="arrow-up-down"></i>
+            </button>
+            <span class="hint-text">or click station on map</span>
+            <div class="swap-line"></div>
+          </div>
+
+          <!-- Destination Station -->
+          <div class="form-group">
+            <label class="form-label" for="dest-select">
+              <span class="dot dot-dest"></span> Arrival Station
+            </label>
+            <div class="select-wrap">
+              <select id="dest-select">
+                <option value="">Select arrival station…</option>
+              </select>
+              <i data-lucide="chevron-down" class="select-caret"></i>
+            </div>
+          </div>
+
+          <!-- Preference Profile Pill Toggles -->
+          <div class="form-group">
+            <div class="label-with-tooltip">
+              <label class="form-label">
+                <i data-lucide="sliders-horizontal" class="label-icon"></i> Optimization Policy
+              </label>
+              <span class="policy-hint-badge" id="policy-hint">Balanced Weights</span>
+            </div>
+            <div class="pill-toggles" id="preset-pills">
+              <button class="pill active" data-preset="balanced">
+                <i data-lucide="scale"></i> Balanced
+              </button>
+              <button class="pill" data-preset="avoid_crowds">
+                <i data-lucide="shield-check"></i> Avoid Crowds
+              </button>
+              <button class="pill" data-preset="fastest">
+                <i data-lucide="zap"></i> Fastest
+              </button>
+              <button class="pill" data-preset="minimal_transfers">
+                <i data-lucide="git-merge"></i> Min Transfers
+              </button>
+            </div>
+          </div>
+
+          <!-- Departure Time Window (t, t+15, t+30) -->
+          <div class="form-group">
+            <div class="label-with-tooltip">
+              <label class="form-label">
+                <i data-lucide="clock" class="label-icon"></i> Departure Window
+              </label>
+              <span class="policy-hint-badge" id="departure-hint">Now (t)</span>
+            </div>
+            <div class="pill-toggles departure-pills" id="departure-pills">
+              <button class="pill active" data-window="t" id="time-pill-t">
+                <i data-lucide="clock"></i> Now (t)
+              </button>
+              <button class="pill" data-window="t+15" id="time-pill-t15">
+                <i data-lucide="chevrons-right"></i> +15m (t+15)
+              </button>
+              <button class="pill" data-window="t+30" id="time-pill-t30">
+                <i data-lucide="fast-forward"></i> +30m (t+30)
+              </button>
+            </div>
+          </div>
+
+          <!-- Primary Action Button -->
+          <button id="btn-find-route" class="btn-primary" disabled>
+            <div class="btn-shine"></div>
+            <i data-lucide="route" class="btn-icon"></i>
+            <span>Find Optimal Route</span>
+            <span class="shortcut-tag">Enter</span>
+            <span class="spinner hidden" id="search-spinner"></span>
+          </button>
+        </section>
+
+        <!-- ── SIMULATION & DISRUPTION CONTROL DECK ────────────────────────── -->
+        <section class="sidebar-section">
+          <div class="section-label">
+            <i data-lucide="activity" class="section-icon"></i>
+            <span>Simulation Deck</span>
+          </div>
+
+          <!-- Live Crowd Control Card -->
+          <div class="crowd-control-card">
+            <div class="control-row">
+              <div class="control-text-block">
+                <span class="control-title">
+                  <i data-lucide="users" class="ctrl-icon"></i> Dynamic Passenger Flow
+                </span>
+                <span class="control-desc">Simulate rush hour variations across all lines</span>
+              </div>
+              <button id="btn-simulate-crowd" class="btn-secondary btn-sm" title="Randomize Passenger Loads">
+                <i data-lucide="shuffle"></i> Randomize
+              </button>
+            </div>
+          <!-- Emergency Scenario Presets -->
+          <div class="scenario-deck-wrap">
+            <div class="scenario-deck-header">
+              <span class="control-title">
+                <i data-lucide="siren" class="ctrl-icon text-amber"></i> Emergency Scenarios
+              </span>
+              <span class="scenario-tag">Instant FX</span>
+            </div>
+            <div class="scenario-chips-grid">
+              <button class="scenario-chip" data-scenario="storm" title="Simulate Thunderstorm: Central Hub power outage & Line C shutdown">
+                <span class="scenario-icon">🌩️</span>
+                <span class="scenario-text">Storm Outage</span>
+              </button>
+              <button class="scenario-chip" data-scenario="match" title="Simulate Match Day: Expo Centre & Airport peak crowd surge">
+                <span class="scenario-icon">⚽</span>
+                <span class="scenario-text">Match Surge</span>
+              </button>
+              <button class="scenario-chip" data-scenario="repair" title="Simulate Track Repair: Line B track split between Market Plaza and Riverside">
+                <span class="scenario-icon">🚧</span>
+                <span class="scenario-text">Track Repair</span>
+              </button>
+              <button class="scenario-chip" data-scenario="clear" title="Restore Normal Operations: Clear all disruptions and normalize crowds">
+                <span class="scenario-icon">🟢</span>
+                <span class="scenario-text">All Clear</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Network Disruption Toggles -->
+          <div class="disruption-section">
+            <div class="disruption-header">
+              <div class="disruption-title-group">
+                <i data-lucide="alert-triangle" class="ctrl-icon text-amber"></i>
+                <span class="control-label-text">Network Disruptions</span>
+              </div>
+              <div class="disruption-badges">
+                <span class="badge-count" id="disruption-count">0</span>
+                <span class="badge-label">Active</span>
+              </div>
+            </div>
+
+            <!-- Disruption Filter / Search -->
+            <div class="disruption-search-wrap">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="disruption-search" placeholder="Filter stations or lines…" />
+            </div>
+
+            <div class="disruption-list" id="disruptions-list">
+              <!-- Dynamically populated station/edge toggles -->
+            </div>
+          </div>
+
+          <!-- Reset -->
+          <button id="btn-reset-all" class="btn-danger btn-sm btn-full">
+            <i data-lucide="rotate-ccw" class="btn-icon"></i>
+            <span>Reset Network Defaults</span>
+          </button>
+        </section>
+
+      </div>
+    </aside>
+
+    <!-- ── CENTER CANVAS: Interactive Metro Network Graph ────────────────────── -->
+    <main id="center-canvas" class="panel">
+
+      <!-- Top Overlay: Active Route Summary Banner (hidden until route is calculated) -->
+      <div class="canvas-top-banner" id="canvas-top-banner" style="display: none;">
+        <div class="banner-content">
+          <span class="banner-pulse"></span>
+          <span class="banner-text" id="banner-route-text">Route Active</span>
+        </div>
+      </div>
+
+      <!-- Floating Map Controls (Top Right) -->
+      <div class="map-floating-controls" id="map-controls">
+        <button id="btn-map-zoomin" class="map-ctrl-btn" title="Zoom In">
+          <i data-lucide="plus"></i>
+        </button>
+        <button id="btn-map-zoomout" class="map-ctrl-btn" title="Zoom Out">
+          <i data-lucide="minus"></i>
+        </button>
+        <div class="map-ctrl-divider"></div>
+        <button id="btn-map-fit" class="map-ctrl-btn" title="Fit Entire Network">
+          <i data-lucide="maximize-2"></i>
+        </button>
+        <button id="btn-map-reset" class="map-ctrl-btn" title="Reset Viewport">
+          <i data-lucide="crosshair"></i>
+        </button>
+      </div>
+
+      <!-- Station Hover Tooltip (HTML overlay for supreme visual clarity) -->
+      <div id="station-tooltip" class="station-tooltip-glass" style="display: none;">
+        <div class="tooltip-header">
+          <div class="tooltip-dot" id="tt-dot"></div>
+          <span class="tooltip-name" id="tt-name">Station Name</span>
+          <span class="tooltip-avail" id="tt-avail">Operational</span>
+        </div>
+        <div class="tooltip-body">
+          <div class="tooltip-row">
+            <span class="tt-label">Lines:</span>
+            <div class="tt-lines" id="tt-lines"></div>
+          </div>
+          <div class="tooltip-row">
+            <span class="tt-label">Crowd Density:</span>
+            <span class="tt-val" id="tt-crowd">Low</span>
+          </div>
+          <div class="tt-crowd-bar-track">
+            <div class="tt-crowd-bar-fill" id="tt-crowd-bar" style="width: 25%;"></div>
+          </div>
+        </div>
+        <div class="tooltip-actions">
+          <button class="tt-btn tt-btn-src" id="tt-btn-src">Set as Origin</button>
+          <button class="tt-btn tt-btn-dst" id="tt-btn-dst">Set as Destination</button>
+        </div>
+      </div>
+
+      <!-- The Canvas Container -->
+      <div class="map-canvas-wrapper" id="map-viewport">
+        <!-- Canvas element injected by MetroCanvas -->
+      </div>
+
+      <!-- Floating Docked Legend (Collapsible) -->
+      <div class="map-legend-dock" id="map-legend">
+        <button class="legend-dock-toggle" id="legend-toggle-btn">
+          <div class="dock-title-group">
+            <i data-lucide="layers" class="dock-icon"></i>
+            <span>Network Key</span>
+          </div>
+          <i data-lucide="chevron-up" class="legend-chevron" id="legend-chevron"></i>
+        </button>
+        <div class="legend-dock-body" id="legend-body">
+          <div class="legend-group">
+            <span class="legend-group-title">Metro Lines</span>
+            <div class="legend-grid">
+              <div class="legend-item">
+                <span class="legend-swatch swatch-line-a"></span>
+                <span class="legend-txt">Line A (Emerald)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch swatch-line-b"></span>
+                <span class="legend-txt">Line B (Indigo)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch swatch-line-c"></span>
+                <span class="legend-txt">Line C (Amber)</span>
+              </div>
+            </div>
+          </div>
+          <div class="legend-divider-hr"></div>
+          <div class="legend-group">
+            <span class="legend-group-title">Passenger Crowding</span>
+            <div class="legend-grid">
+              <div class="legend-item">
+                <span class="legend-dot dot-crowd-low"></span>
+                <span class="legend-txt">Low (&lt;40%)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-crowd-med"></span>
+                <span class="legend-txt">Moderate (40-75%)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-crowd-high"></span>
+                <span class="legend-txt">High (&gt;75%)</span>
+              </div>
+            </div>
+          </div>
+          <div class="legend-divider-hr"></div>
+          <div class="legend-group">
+            <span class="legend-group-title">Routing & Status</span>
+            <div class="legend-grid">
+              <div class="legend-item">
+                <span class="legend-swatch swatch-active-route"></span>
+                <span class="legend-txt">Optimal Path</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch swatch-alt-route"></span>
+                <span class="legend-txt">Alternative Path</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-interchange"></span>
+                <span class="legend-txt">Interchange Hub</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-closed"></span>
+                <span class="legend-txt">Closed Station</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Status Bar -->
+      <div class="map-status-bar">
+        <span class="status-led" id="status-led"></span>
+        <span class="status-text" id="map-status-text">Ready — Select departure and arrival stations to compute optimal path</span>
+      </div>
+    </main>
+
+    <!-- ── RIGHT PANEL: Trip Summary & A* Inspector (390px) ──────────────────── -->
+    <aside id="sidebar-right" class="panel">
+      <div class="right-scroll">
+
+        <!-- ── TOP: RECOMMENDED ROUTE CARD ──────────────────────────────────── -->
+        <section class="right-section" id="route-card-section">
+          <div class="section-label">
+            <div class="section-title-left">
+              <i data-lucide="map-pin" class="section-icon text-cyan"></i>
+              <span>Recommended Route</span>
+            </div>
+            <div class="route-header-actions">
+              <button id="btn-open-pass" class="btn-action-pill" title="View Digital Boarding Pass" style="display: none;">
+                <i data-lucide="ticket"></i> Boarding Pass
+              </button>
+              <button id="btn-route-council" class="btn-action-pill btn-action-council" title="Debate this journey in AI Council" style="display: none;">
+                <i data-lucide="bot"></i> Debate
+              </button>
+              <span class="route-rank-badge" id="route-rank-badge">Optimal</span>
+            </div>
+          </div>
+
+          <!-- Key Stat Tiles (4-grid) -->
+          <div class="stat-tiles" id="stat-tiles">
+            <!-- Travel Time -->
+            <div class="stat-tile stat-tile-time">
+              <div class="tile-top">
+                <span class="tile-caption">EST. TIME</span>
+                <div class="stat-icon-wrap stat-time">
+                  <i data-lucide="clock"></i>
+                </div>
+              </div>
+              <div class="stat-data">
+                <span class="stat-value" id="metric-time">—</span>
+                <span class="stat-sub" id="metric-time-sub">Minutes</span>
+              </div>
+            </div>
+
+            <!-- Fare -->
+            <div class="stat-tile stat-tile-fare">
+              <div class="tile-top">
+                <span class="tile-caption">TOTAL FARE</span>
+                <div class="stat-icon-wrap stat-fare">
+                  <i data-lucide="indian-rupee"></i>
+                </div>
+              </div>
+              <div class="stat-data">
+                <span class="stat-value" id="metric-fare">—</span>
+                <span class="stat-sub" id="metric-fare-sub">Standard Smart Card</span>
+              </div>
+            </div>
+
+            <!-- Transfers -->
+            <div class="stat-tile stat-tile-transfer">
+              <div class="tile-top">
+                <span class="tile-caption">TRANSFERS</span>
+                <div class="stat-icon-wrap stat-transfer">
+                  <i data-lucide="repeat-2"></i>
+                </div>
+              </div>
+              <div class="stat-data">
+                <span class="stat-value" id="metric-transfers">—</span>
+                <span class="stat-sub" id="metric-transfer-sub">Line Swaps</span>
+              </div>
+            </div>
+
+            <!-- Crowd Density -->
+            <div class="stat-tile stat-tile-crowd">
+              <div class="tile-top">
+                <span class="tile-caption">CROWD RATING</span>
+                <div class="stat-icon-wrap stat-crowd">
+                  <i data-lucide="users"></i>
+                </div>
+              </div>
+              <div class="stat-data">
+                <span class="stat-value" id="metric-crowd">—</span>
+                <span class="stat-sub" id="metric-crowd-sub">Comfort Index</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Eco & Carbon Footprint Card ───────────────────────────────── -->
+          <div class="eco-impact-card" id="eco-impact-card" style="display: none;">
+            <div class="eco-left">
+              <div class="eco-leaf-icon">
+                <i data-lucide="leaf"></i>
+              </div>
+              <div class="eco-details">
+                <span class="eco-title">Green Transit Footprint</span>
+                <span class="eco-metric" id="eco-co2-saved">1.4 kg CO₂ prevented</span>
+              </div>
+            </div>
+            <div class="eco-badge-wrap">
+              <span class="eco-comp-badge">-78% vs Car</span>
+              <span class="eco-fuel-saved" id="eco-fuel-saved">Saved ₹165 vs taxi</span>
+            </div>
+          </div>
+
+          <!-- ── Departure Window Forecast Matrix (t, t+15, t+30) ─────────────── -->
+          <div class="time-shift-card" id="time-shift-card" style="display: none;">
+            <div class="time-shift-header">
+              <div class="ts-title-group">
+                <i data-lucide="clock-arrow-up" class="ts-icon text-cyan"></i>
+                <span class="ts-title">Departure Forecast Windows (t, t+15, t+30)</span>
+              </div>
+              <span class="ts-badge" id="ts-badge">Predictive Flow</span>
+            </div>
+            <div class="time-shift-grid" id="time-shift-grid">
+              <!-- Dynamically rendered via app.js -->
+            </div>
+            <div class="time-shift-advisory" id="time-shift-advisory">
+              <i data-lucide="info" class="advisory-icon"></i>
+              <span class="advisory-text" id="time-shift-advice-text">—</span>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Itinerary Timeline -->
+          <div class="itinerary-wrap">
+            <div class="itinerary-header">
+              <span class="itinerary-title">
+                <i data-lucide="list-ordered" class="itinerary-icon"></i> Turn-by-Turn Itinerary
+              </span>
+              <div class="alt-selector" id="alt-selector-btns">
+                <!-- Dynamically populated: Optimal / Alt tabs -->
+              </div>
+            </div>
+
+            <div class="station-timeline" id="station-timeline">
+              <div class="timeline-empty">
+                <div class="empty-icon-wrap">
+                  <i data-lucide="compass" class="empty-icon"></i>
+                </div>
+                <span class="empty-heading">No Active Route</span>
+                <span class="empty-sub">Select origin & destination or choose a popular trip from the left sidebar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alternative Route Accordion -->
+          <div class="alt-accordion" id="alt-accordion" style="display: none;">
+            <button class="accordion-trigger" id="alt-accordion-trigger">
+              <div class="accordion-trigger-left">
+                <i data-lucide="git-branch" class="acc-icon"></i>
+                <span>Alternative Route Comparison</span>
+              </div>
+              <i data-lucide="chevron-down" class="acc-chevron" id="alt-acc-chevron"></i>
+            </button>
+            <div class="accordion-body" id="alt-accordion-body">
+              <div class="alt-compare-table" id="alt-compare-content">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── BOTTOM: A* ALGORITHM INSPECTOR ───────────────────────────────── -->
+        <section class="right-section" id="astar-inspector-section">
+          <div class="section-label">
+            <div class="section-title-left">
+              <i data-lucide="cpu" class="section-icon text-purple"></i>
+              <span>A* Algorithm Inspector</span>
+            </div>
+            <span class="inspector-badge">Real-Time Heuristic</span>
+          </div>
+
+          <!-- Real-Time Metrics -->
+          <div class="inspector-metrics" id="inspector-metrics">
+            <div class="insp-metric">
+              <span class="insp-label">Nodes Visited</span>
+              <span class="insp-value mono" id="insp-visited">—</span>
+            </div>
+            <div class="insp-metric">
+              <span class="insp-label">Closed Set</span>
+              <span class="insp-value mono" id="insp-closed">—</span>
+            </div>
+            <div class="insp-metric">
+              <span class="insp-label">Search Prune</span>
+              <span class="insp-value mono" id="insp-prune">—</span>
+            </div>
+          </div>
+
+          <!-- Formula Display Card -->
+          <div class="formula-card">
+            <div class="formula-display">
+              <span class="formula-fn">f(n)</span>
+              <span class="formula-eq">=</span>
+              <span class="formula-gn">g(n)</span>
+              <span class="formula-plus">+</span>
+              <span class="formula-hn">h(n)</span>
+            </div>
+            <div class="formula-desc">
+              <span><strong class="mono text-cyan">g(n)</strong>: Accumulated path cost (travel time + crowd factor + transfer penalty)</span>
+              <span><strong class="mono text-purple">h(n)</strong>: Admissible Euclidean distance heuristic to target × 0.05</span>
+            </div>
+          </div>
+
+          <!-- Step-Through Explorer Table Controls -->
+          <div class="trace-controls">
+            <div class="trace-playback">
+              <button id="btn-trace-play" class="map-ctrl-btn" title="Play / Pause Step-Through">
+                <i data-lucide="play" id="trace-play-icon"></i>
+              </button>
+              <button id="btn-trace-prev" class="map-ctrl-btn" title="Step Backward">
+                <i data-lucide="skip-back"></i>
+              </button>
+              <button id="btn-trace-step" class="map-ctrl-btn" title="Step Forward">
+                <i data-lucide="skip-forward"></i>
+              </button>
+              <button id="btn-trace-reset" class="map-ctrl-btn" title="Reset Trace">
+                <i data-lucide="rotate-ccw"></i>
+              </button>
+            </div>
+            <div class="trace-info-group">
+              <div class="speed-selector" id="speed-selector">
+                <button class="speed-btn active" data-speed="250">1x</button>
+                <button class="speed-btn" data-speed="120">2x</button>
+                <button class="speed-btn" data-speed="50">5x</button>
+              </div>
+              <span class="trace-counter mono" id="trace-step-counter">0 / 0</span>
+            </div>
+          </div>
+
+          <div class="trace-table-wrapper">
+            <table class="trace-table" id="trace-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Station</th>
+                  <th>g(n)</th>
+                  <th>h(n)</th>
+                  <th>f(n)</th>
+                </tr>
+              </thead>
+              <tbody id="trace-tbody">
+                <tr><td colspan="5" class="empty-state">No search trace recorded. Run a route to inspect A*.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ═══════════════════════════ MODALS ═══════════════════════════ -->
+
+  <!-- 1. MULTI-AGENT TRANSIT AI COUNCIL MODAL -->
+  <div class="modal-backdrop" id="council-modal" style="display: none;">
+    <div class="modal-box council-modal-box">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge council-badge">
+            <i data-lucide="bot"></i>
+          </div>
+          <div>
+            <div class="modal-title-row">
+              <h2 class="modal-title">Transit AI Council Debate</h2>
+              <span class="council-engine-pill" id="council-engine-tag">SCADA Dispatcher Heuristic</span>
+            </div>
+            <p class="modal-subtitle" id="council-terminals">Deliberation: Origin ➔ Destination</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-council" title="Close Dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- 3 Specialized Agent Cards -->
+        <div class="council-agents-grid">
+          <!-- The Rusher -->
+          <div class="council-agent-card agent-rusher" id="agent-card-rusher">
+            <div class="council-agent-top">
+              <div class="council-agent-avatar rusher-av">
+                <i data-lucide="zap"></i>
+              </div>
+              <div class="council-agent-meta">
+                <span class="council-agent-name">The Rusher</span>
+                <span class="council-agent-role">Speed & Time Maximizer</span>
+              </div>
+            </div>
+            <div class="council-agent-stats">
+              <span class="c-stat" id="c-rusher-time"><i data-lucide="clock"></i> — min</span>
+              <span class="c-stat" id="c-rusher-fare"><i data-lucide="indian-rupee"></i> ₹—</span>
+              <span class="c-stat" id="c-rusher-crowd"><i data-lucide="users"></i> —</span>
+            </div>
+          </div>
+
+          <!-- The Relaxer -->
+          <div class="council-agent-card agent-relaxer" id="agent-card-relaxer">
+            <div class="council-agent-top">
+              <div class="council-agent-avatar relaxer-av">
+                <i data-lucide="shield-check"></i>
+              </div>
+              <div class="council-agent-meta">
+                <span class="council-agent-name">The Relaxer</span>
+                <span class="council-agent-role">Comfort & Crowd Avoidance</span>
+              </div>
+            </div>
+            <div class="council-agent-stats">
+              <span class="c-stat" id="c-relaxer-time"><i data-lucide="clock"></i> — min</span>
+              <span class="c-stat" id="c-relaxer-fare"><i data-lucide="indian-rupee"></i> ₹—</span>
+              <span class="c-stat" id="c-relaxer-crowd"><i data-lucide="users"></i> —</span>
+            </div>
+          </div>
+
+          <!-- The Hawk -->
+          <div class="council-agent-card agent-hawk" id="agent-card-hawk">
+            <div class="council-agent-top">
+              <div class="council-agent-avatar hawk-av">
+                <i data-lucide="coins"></i>
+              </div>
+              <div class="council-agent-meta">
+                <span class="council-agent-name">The Hawk</span>
+                <span class="council-agent-role">Budget & Fare Minimizer</span>
+              </div>
+            </div>
+            <div class="council-agent-stats">
+              <span class="c-stat" id="c-hawk-time"><i data-lucide="clock"></i> — min</span>
+              <span class="c-stat" id="c-hawk-fare"><i data-lucide="indian-rupee"></i> ₹—</span>
+              <span class="c-stat" id="c-hawk-crowd"><i data-lucide="users"></i> —</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Debate Transcript Log -->
+        <div class="council-transcript-container">
+          <div class="transcript-header">
+            <i data-lucide="radio" class="text-cyan live-pulse-icon"></i>
+            <span>Control Room Dispatch Channel</span>
+            <span class="transcript-status">TELEMETRY DECRYPTED</span>
+          </div>
+          <div class="transcript-feed" id="council-transcript-feed">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Dispatcher Verdict & Compromise Action -->
+        <div class="council-compromise-bar" id="council-compromise-bar">
+          <div class="compromise-info">
+            <span class="compromise-label">DISPATCHER RECOMMENDATION:</span>
+            <span class="compromise-text" id="council-compromise-summary">Evaluating routes...</span>
+          </div>
+          <button class="btn-primary btn-sm" id="btn-apply-compromise">
+            <i data-lucide="check-circle-2"></i>
+            <span>Apply Compromise Route</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. DIGITAL TRANSIT BOARDING PASS MODAL -->
+  <div class="modal-backdrop" id="pass-modal" style="display: none;">
+    <div class="modal-box pass-modal-box">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge pass-badge">
+            <i data-lucide="ticket"></i>
+          </div>
+          <div>
+            <h2 class="modal-title">AI Metro Smart Token</h2>
+            <p class="modal-subtitle">Digital Boarding Pass & Live Transit Clearance</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-pass" title="Close Pass">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body pass-body">
+        <div class="ticket-card" id="printable-ticket">
+          <!-- Holographic Header -->
+          <div class="ticket-top">
+            <div class="ticket-brand">
+              <span class="ticket-logo-txt">AI METRO TRANSIT TOKEN</span>
+              <span class="ticket-id mono" id="pass-serial">PASS-8942-X</span>
+            </div>
+            <span class="ticket-stamp">VALIDATED</span>
+          </div>
+
+          <!-- Terminals -->
+          <div class="ticket-terminals">
+            <div class="terminal-block">
+              <span class="t-caption">ORIGIN</span>
+              <span class="t-name" id="pass-origin">Airport</span>
+            </div>
+            <div class="t-arrow-wrap">
+              <i data-lucide="arrow-right" class="t-arrow"></i>
+              <span class="t-route-time" id="pass-time">16 min</span>
+            </div>
+            <div class="terminal-block text-right">
+              <span class="t-caption">DESTINATION</span>
+              <span class="t-name" id="pass-dest">Central Hub</span>
+            </div>
+          </div>
+
+          <!-- Track & Line Pills -->
+          <div class="ticket-lines-row" id="pass-lines-row">
+            <!-- Line badges -->
+          </div>
+
+          <!-- Ticket Metrics Grid -->
+          <div class="ticket-metrics">
+            <div class="tm-item">
+              <span class="tm-label">FARE</span>
+              <span class="tm-val mono" id="pass-fare">₹41</span>
+            </div>
+            <div class="tm-item">
+              <span class="tm-label">TRANSFERS</span>
+              <span class="tm-val mono" id="pass-transfers">1 Swap</span>
+            </div>
+            <div class="tm-item">
+              <span class="tm-label">CROWD</span>
+              <span class="tm-val" id="pass-crowd">Low</span>
+            </div>
+            <div class="tm-item">
+              <span class="tm-label">DEPARTURE</span>
+              <span class="tm-val mono" id="pass-window">Now (t)</span>
+            </div>
+          </div>
+
+          <!-- Barcode & Advisory -->
+          <div class="ticket-bottom">
+            <div class="ticket-barcode mono">
+              ||| | |||| || | ||||| ||| || |||| || ||| |||| |
+            </div>
+            <span class="ticket-subtext">Single journey RFID token · Present at automatic fare gate</span>
+          </div>
+        </div>
+
+        <div class="pass-actions">
+          <button class="btn-secondary" id="btn-print-pass">
+            <i data-lucide="printer"></i>
+            <span>Print Pass</span>
+          </button>
+          <button class="btn-primary" id="btn-copy-pass">
+            <i data-lucide="copy"></i>
+            <span>Copy Route Summary</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/canvas_renderer.js?v=2.7"></script>
+  <script src="/static/app.js?v=2.7"></script>
+</body>
+</html>
